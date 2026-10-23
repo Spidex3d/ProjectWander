@@ -16,6 +16,8 @@ public:
     // Update chunks based on camera position
     void Update(const glm::vec3& cameraPosition);
 
+    bool GetHeightAt(float worldX, float worldZ, float& height) const;
+
     void Render(
         const Shader& shader,
         const glm::mat4& view,

@@ -58,6 +58,20 @@ private:
 	bool m_terrainRendered = false;	// Flag to indicate if the terrain has been rendered
 	
 	Material m_rockMaterial;
+	Material m_grassMaterial;
+	// Terrain material blending
+	float m_rockStart = 0.12f;
+	float m_rockEnd = 0.25f;
+	float m_blendNoise = 0.05f;
+	// Triplanar texture settings
+	float m_textureScale = 0.1f;
+	float m_triplanarSharpness = 4.0f;
+
+	// Camera movement modes
+	bool m_walkMode = true;
+
+	float m_eyeHeight = 2.0f;
+	float m_walkSpeed = 5.0f;
 
 	bool m_wireframe = false;	// Flag to indicate if wireframe mode is enabled
 

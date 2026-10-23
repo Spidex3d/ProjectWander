@@ -78,6 +78,39 @@ void TerrainManager::Update(const glm::vec3& cameraPosition)
     }
 }
 
+bool TerrainManager::GetHeightAt(
+    float worldX,
+    float worldZ,
+    float& height
+) const
+{
+    float chunkSize =
+        m_chunkResolution * m_chunkSpacing;
+
+    // Find the chunk containing this position
+    int chunkX = static_cast<int>(
+        std::floor(worldX / chunkSize)
+        );
+
+    int chunkZ = static_cast<int>(
+        std::floor(worldZ / chunkSize)
+        );
+
+    ChunkKey key(chunkX, chunkZ);
+
+    auto it = m_chunks.find(key);
+
+    if (it == m_chunks.end())
+        return false;
+
+    return it->second->GetHeightAt(
+        worldX,
+        worldZ,
+        height
+    );
+}
+
+
 void TerrainManager::Render(
     const Shader& shader,
     const glm::mat4& view,

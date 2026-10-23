@@ -21,6 +21,19 @@ bool TerrainChunk::Generate(int size, float spacing)
     );
 }
 
+bool TerrainChunk::GetHeightAt(
+    float worldX,
+    float worldZ,
+    float& height
+) const
+{
+    return m_terrain.GetHeightAt(
+        worldX,
+        worldZ,
+        height
+    );
+}
+
 void TerrainChunk::Render(
     const Shader& shader,
     const glm::mat4& view,
@@ -41,15 +54,6 @@ void TerrainChunk::Render(
     m_terrain.Render(shader, view, projection);
 }
 
-
-//void TerrainChunk::Render(
-//    const Shader& shader,
-//    const glm::mat4& view,
-//    const glm::mat4& projection
-//) const
-//{
-//    m_terrain.Render(shader, view, projection);
-//}
 
 glm::ivec2 TerrainChunk::GetChunkPosition() const
 {

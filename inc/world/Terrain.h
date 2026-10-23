@@ -29,6 +29,8 @@ public:
     float NoiseFrequency = 0.01f;
     int NoiseOctaves = 5;
 
+    bool GetHeightAt(float worldX, float worldZ, float& height) const;
+
 
     void Render(
         const Shader& shader,
@@ -46,6 +48,10 @@ private:
     //std::vector<glm::vec3> m_vertices;
     std::vector<TerrainVertex> m_vertices;
     std::vector<unsigned int> m_indices;
+
+    int m_gridSize = 0;
+    float m_gridSpacing = 1.0f;
+    glm::vec2 m_chunkOrigin = glm::vec2(0.0f);
 
     int m_indexCount = 0;
 };

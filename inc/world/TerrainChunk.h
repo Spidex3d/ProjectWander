@@ -14,6 +14,8 @@ public:
 
     bool Generate(int size, float spacing);
 
+    bool GetHeightAt(float worldX, float worldZ, float& height) const;
+
     void Render(
         const Shader& shader,
         const glm::mat4& view,

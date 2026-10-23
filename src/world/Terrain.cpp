@@ -51,7 +51,9 @@ bool Terrain::Generate(int size, float spacing, const glm::vec2& chunkOrigin)
     if (size <= 0 || spacing <= 0.0f)
         return false;
 
-    
+    m_gridSize = size;
+    m_gridSpacing = spacing;
+    m_chunkOrigin = chunkOrigin;
     
     // Generate terrain vertices
     for (int z = 0; z <= size; ++z)
@@ -227,15 +229,87 @@ bool Terrain::Generate(int size, float spacing, const glm::vec2& chunkOrigin)
     return true;
 }
 
+bool Terrain::GetHeightAt(
+    float worldX,
+    float worldZ,
+    float& height
+) const
+{
+    if (m_vertices.empty() || m_gridSize <= 0)
+        return false;
+
+    // Convert world coordinates to local grid coordinates
+    float gridX =
+        (worldX - m_chunkOrigin.x) / m_gridSpacing;
+
+    float gridZ =
+        (worldZ - m_chunkOrigin.y) / m_gridSpacing;
+
+    // Check whether the position is inside this chunk
+    if (gridX < 0.0f || gridZ < 0.0f ||
+        gridX >= m_gridSize || gridZ >= m_gridSize)
+    {
+        return false;
+    }
+
+    int x = static_cast<int>(std::floor(gridX));
+    int z = static_cast<int>(std::floor(gridZ));
+
+    float fx = gridX - x;
+    float fz = gridZ - z;
+
+    int rowSize = m_gridSize + 1;
+
+    // Four corner heights
+    float h00 = m_vertices[
+        z * rowSize + x
+    ].Position.y;
+
+    float h10 = m_vertices[
+        z * rowSize + x + 1
+    ].Position.y;
+
+    float h01 = m_vertices[
+        (z + 1) * rowSize + x
+    ].Position.y;
+
+    float h11 = m_vertices[
+        (z + 1) * rowSize + x + 1
+    ].Position.y;
+
+    // Interpolate using the same triangles
+    // as our terrain index buffer
+    if (fx + fz <= 1.0f)
+    {
+        height =
+            h00 +
+            (h10 - h00) * fx +
+            (h01 - h00) * fz;
+    }
+    else
+    {
+        height =
+            h11 +
+            (h01 - h11) * (1.0f - fx) +
+            (h10 - h11) * (1.0f - fz);
+    }
+
+    return true;
+}
+
+
+
 void Terrain::Render(
     const Shader& shader,
     const glm::mat4& view,
     const glm::mat4& projection
 ) const
 {
+
     if (m_VAO == 0 || m_indexCount == 0)
         return;
 
+    
     shader.Use();
 
     shader.setMat4("view", view);

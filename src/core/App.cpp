@@ -63,9 +63,15 @@ bool App::Init()
 
 	// Load terrain rock material
 	if (!m_rockMaterial.Load(
-		"assets/materials/Blue_Rock.mat"))
+		"assets/materials/rock/Blue_Rock.mat"))
 	{
 		BOX_LOG_ERROR("Failed to load Blue_Rock material");
+		return false;
+	}
+	if (!m_grassMaterial.Load(
+		"assets/materials/grass/Green_grass.mat"))
+	{
+		BOX_LOG_ERROR("Failed to load Green_grass material");
 		return false;
 	}
 
@@ -110,6 +116,21 @@ int App::Run()
 		// Update terrain chunks around the camera
 		m_terrainManager.Update(m_camera.Position);
 
+		// Keep camera on the ground in walking mode
+		if (m_walkMode)
+		{
+			float groundHeight = 0.0f;
+
+			if (m_terrainManager.GetHeightAt(
+				m_camera.Position.x,
+				m_camera.Position.z,
+				groundHeight))
+			{
+				m_camera.Position.y =
+					groundHeight + m_eyeHeight;
+			}
+		}
+
 		// Get current framebuffer dimensions
 		int width = 0;
 		int height = 0;
@@ -148,7 +169,45 @@ int App::Run()
 		
 		// Render the terrain
 		// Set texture unit
-		m_terrainShader->SetUniformInt("uAlbedo", 0);
+		//m_terrainShader->SetUniformInt("uAlbedo", 0);
+
+		// Activate terrain shader
+		m_terrainShader->Use();
+
+		// Triplanar texture settings
+		m_terrainShader->SetUniformFloat(
+			"uTextureScale",
+			m_textureScale
+		);
+
+		m_terrainShader->SetUniformFloat(
+			"uTriplanarSharpness",
+			m_triplanarSharpness
+		);
+
+		m_terrainShader->SetUniformFloat(
+			"uRockStart",
+			m_rockStart
+		);
+
+		m_terrainShader->SetUniformFloat(
+			"uRockEnd",
+			m_rockEnd
+		);
+
+		m_terrainShader->SetUniformFloat(
+			"uBlendNoise",
+			m_blendNoise
+		);
+
+		// Assign texture units
+		m_terrainShader->SetUniformInt(
+			"uGrassAlbedo", 0
+		);
+
+		m_terrainShader->SetUniformInt(
+			"uRockAlbedo", 1
+		);
 
 		// Set sunlight direction
 		m_terrainShader->setVec3(
@@ -156,21 +215,21 @@ int App::Run()
 			glm::vec3(0.5f, 1.0f, 0.3f)
 		);
 
-		// Bind rock texture
-		m_rockMaterial.Bind(0);
+		// Bind both terrain materials
+		m_grassMaterial.Bind(0);
+		m_rockMaterial.Bind(1);
 
-		// Render all terrain chunks
+		// Render terrain chunks
 		m_terrainManager.Render(
 			*m_terrainShader,
 			view,
 			projection
 		);
 
-		// Unbind texture
-		m_rockMaterial.Unbind(0);
-		
-		
-		//m_terrainManager.Render(*m_terrainShader, view, projection);
+		// Unbind materials
+		m_grassMaterial.Unbind(0);
+		m_rockMaterial.Unbind(1);
+
 
 		
 
@@ -187,6 +246,40 @@ int App::Run()
 		ImGui::Separator();
 
 		ImGui::Checkbox("Wireframe", &m_wireframe);
+
+		ImGui::SeparatorText("Triplanar Mapping");
+
+		ImGui::SliderFloat(
+			"Texture Scale",
+			&m_textureScale,
+			0.01f,
+			0.5f,
+			"%.3f"
+		);
+
+		ImGui::SliderFloat(
+			"Projection Sharpness",
+			&m_triplanarSharpness,
+			1.0f,
+			16.0f
+		);
+
+		ImGui::SeparatorText("Terrain Materials");
+
+		ImGui::SliderFloat("Rock Start",
+			&m_rockStart, 0.0f, 0.5f);
+
+		ImGui::SliderFloat("Rock End",
+			&m_rockEnd, 0.0f, 0.8f);
+
+		ImGui::SliderFloat("Blend Variation",
+			&m_blendNoise, 0.0f, 0.2f);
+
+		// Prevent invalid blending range
+		if (m_rockEnd <= m_rockStart)
+		{
+			m_rockEnd = m_rockStart + 0.01f;
+		}
 
 		ImGui::Separator();
 		ImGui::SeparatorText("Terrain Streaming");
@@ -223,6 +316,35 @@ int App::Run()
 			m_camera.Pitch
 		);
 
+		ImGui::SeparatorText("Camera Movement");
+
+		ImGui::Checkbox(
+			"Walking Mode",
+			&m_walkMode
+		);
+
+		if (m_walkMode)
+		{
+			ImGui::SliderFloat(
+				"Eye Height",
+				&m_eyeHeight,
+				0.5f,
+				3.0f
+			);
+
+			ImGui::SliderFloat(
+				"Walk Speed",
+				&m_walkSpeed,
+				1.0f,
+				15.0f
+			);
+		}
+
+		ImGui::Text(
+			"Camera Y: %.2f",
+			m_camera.Position.y
+		);
+
 		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
 		ImGui::Text("W,A, S, D: Move camera");
@@ -253,10 +375,9 @@ void App::Shutdown()
 		m_terrainManager.Destroy();
 
 		
-
+		m_grassMaterial.Destroy();
 		m_rockMaterial.Destroy();
-
-
+		
 		// Release shader resources
 		m_terrainShader.reset();
 
@@ -280,20 +401,13 @@ void App::ProcessInput(GLFWwindow* window)
 	}
 
 	// F1 toggles between camera and ImGui
-	bool f1Down =
-		glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS;
+	bool f1Down = glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS;
 
 	if (f1Down && !m_f1Pressed)
 	{
 		m_cameraActive = !m_cameraActive;
 
-		glfwSetInputMode(
-			window,
-			GLFW_CURSOR,
-			m_cameraActive ?
-			GLFW_CURSOR_DISABLED :
-			GLFW_CURSOR_NORMAL
-		);
+		glfwSetInputMode(window, GLFW_CURSOR, m_cameraActive ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
 		// Reset mouse position tracking
 		m_firstMouse = true;
@@ -311,24 +425,83 @@ void App::ProcessInput(GLFWwindow* window)
 		? 40.0f
 		: 15.0f;
 
-	// Movement
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		m_camera.ProcessKeyboard(FORWARD, m_deltaTime);
 
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		m_camera.ProcessKeyboard(BACKWARD, m_deltaTime);
 
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		m_camera.ProcessKeyboard(LEFT, m_deltaTime);
+	// Movement speed
+	float speedMultiplier =
+		glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS
+		? 2.0f
+		: 1.0f;
 
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		m_camera.ProcessKeyboard(RIGHT, m_deltaTime);
+	if (m_walkMode)
+	{
+		// Walking movement stays horizontal
+		glm::vec3 forward = m_camera.Front;
+		forward.y = 0.0f;
 
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		m_camera.ProcessKeyboard(UP, m_deltaTime);
+		if (glm::length(forward) > 0.001f)
+			forward = glm::normalize(forward);
 
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-		m_camera.ProcessKeyboard(DOWN, m_deltaTime);
+		glm::vec3 right = m_camera.Right;
+		right.y = 0.0f;
+
+		if (glm::length(right) > 0.001f)
+			right = glm::normalize(right);
+
+		glm::vec3 movement(0.0f);
+
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			movement += forward;
+
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			movement -= forward;
+
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			movement += right;
+
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			movement -= right;
+
+		// Normalise to avoid faster diagonal movement
+		if (glm::length(movement) > 0.001f)
+		{
+			movement = glm::normalize(movement);
+
+			m_camera.Position +=
+				movement *
+				m_walkSpeed *
+				speedMultiplier *
+				m_deltaTime;
+		}
+	}
+	else
+	{
+		// Original free-fly movement
+		m_camera.MovementSpeed =
+			15.0f * speedMultiplier;
+
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			m_camera.ProcessKeyboard(FORWARD, m_deltaTime);
+
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			m_camera.ProcessKeyboard(BACKWARD, m_deltaTime);
+
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			m_camera.ProcessKeyboard(LEFT, m_deltaTime);
+
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			m_camera.ProcessKeyboard(RIGHT, m_deltaTime);
+
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+			m_camera.ProcessKeyboard(UP, m_deltaTime);
+
+		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+			m_camera.ProcessKeyboard(DOWN, m_deltaTime);
+	}
+
+
+	
+
 }
 
 void App::ProcessMouse(GLFWwindow* window)
