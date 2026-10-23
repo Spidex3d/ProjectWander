@@ -1,0 +1,7 @@
+name=Blue_bricks
+albedo=Blue_bricks_albedo.png
+normal=Blue_bricks_normal.png
+roughness=Blue_bricks_roughness.png
+ao=Blue_bricks_ao.png
+displacement=Blue_bricks_displacement.png
+version=1

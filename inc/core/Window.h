@@ -13,8 +13,6 @@ struct WindowConfig {
 	bool vsync = true;
 };
 
-
-
 class Window
 {
 public:
@@ -23,6 +21,8 @@ public:
 
 	GLFWwindow* GetWindow() const { return window; }
 
+	int GetWindowWidth() const { return m_config.width; }
+	int GetWindowHeight() const { return m_config.height; }
 
 	void SetIcon(GLFWwindow* window); // set window icon from image file
 
@@ -30,6 +30,12 @@ public:
 
 	void Update();
 	void Shutdown();
+
+	bool ImguiInit(GLFWwindow* window);
+	void BeginFrame();
+	void RenderImGui(); // finish ImGui frame and render
+	void ImGuiShutdown();
+
 
 
 
@@ -40,6 +46,8 @@ private:
 	GLFWwindow* window = nullptr;
 
 	WindowConfig m_config;
+
+	bool m_imguiInitialized = false;
 
 	// Simple refcount so multiple Window instances don't re-init/terminate GLFW
 	static int s_glfwRefCount; // static member declaration

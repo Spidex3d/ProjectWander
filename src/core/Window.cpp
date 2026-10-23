@@ -1,10 +1,13 @@
 #define STB_IMAGE_IMPLEMENTATION
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
-
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
 
 #include "core/Window.h"
 #include <miniBoxLog.h>
-#include <glad/glad.h>
 #include "helper.h"
 
 int Window::s_glfwRefCount = 0;
@@ -103,4 +106,78 @@ void Window::Shutdown()
 		if (s_glfwRefCount == 0)
 			glfwTerminate();
 	}
+}
+
+bool Window::ImguiInit(GLFWwindow* window)
+{
+	Helpers helpers; // from Helpers.h, used to get asset paths - fonts, textures etc.
+	// ImGui set up
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	const char* glsl_version = "#version 460 core";
+	ImGui_ImplOpenGL3_Init(glsl_version);
+
+	// Fonts
+	ImFontConfig fontconfig;
+	fontconfig.MergeMode = true;
+	fontconfig.PixelSnapH = true;
+	static const ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+
+
+	fontconfig.GlyphOffset = ImVec2(0.0f, 1.0f);
+	std::string fontPath = helpers.GetAssetPath(FONT_PATH_MAIN_REL); // comic sans font
+	io.Fonts->AddFontFromFileTTF(fontPath.c_str(), FONT_SIZE);
+
+	std::string AFfontPath = helpers.GetAssetPath(FA_SOLID_PATH);
+	io.Fonts->AddFontFromFileTTF(AFfontPath.c_str(), FONT_SIZE, &fontconfig, ranges);
+
+	m_imguiInitialized = true;
+	BOX_LOG_INFO("ImGui initialized successfully");
+
+	return true;
+}
+
+void Window::BeginFrame()
+{
+	// New Frame
+	if (!m_imguiInitialized)
+		return;
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+}
+
+void Window::RenderImGui()
+{
+	if (!m_imguiInitialized)
+		return;
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		GLFWwindow* backup_current_context = glfwGetCurrentContext();
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		glfwMakeContextCurrent(backup_current_context);
+	}
+}
+
+void Window::ImGuiShutdown()
+{
+	if (!m_imguiInitialized)
+		return;
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+	m_imguiInitialized = false;
 }

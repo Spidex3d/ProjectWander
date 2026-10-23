@@ -1,0 +1,7 @@
+name=Brick
+albedo=Brick_albedo.png
+normal=Brick_normal.png
+roughness=Brick_roughness.png
+ao=Brick_ao.png
+displacement=Brick_displacement.png
+version=1

@@ -1,0 +1,7 @@
+name=Blue_Rock
+albedo=Blue_Rock_albedo.png
+normal=Blue_Rock_normal.png
+roughness=Blue_Rock_roughness.png
+ao=Blue_Rock_ao.png
+displacement=Blue_Rock_displacement.png
+version=1

@@ -1,0 +1,7 @@
+name=Green_bricks
+albedo=Green_bricks_albedo.png
+normal=Green_bricks_normal.png
+roughness=Green_bricks_roughness.png
+ao=Green_bricks_ao.png
+displacement=Green_bricks_displacement.png
+version=1

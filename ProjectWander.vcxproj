@@ -142,17 +142,49 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="assets\shaders\terrain.vert" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\camera\Camera.cpp" />
     <ClCompile Include="src\core\App.cpp" />
     <ClCompile Include="src\core\Window.cpp" />
+    <ClCompile Include="src\graphics\Material.cpp" />
+    <ClCompile Include="src\graphics\Shader.cpp" />
     <ClCompile Include="src\Helper.cpp" />
+    <ClCompile Include="src\world\Terrain.cpp" />
+    <ClCompile Include="src\world\TerrainChunk.cpp" />
+    <ClCompile Include="src\world\TerrainManager.cpp" />
+    <ClCompile Include="vendors\imgui\imgui.cpp" />
+    <ClCompile Include="vendors\imgui\imgui_demo.cpp" />
+    <ClCompile Include="vendors\imgui\imgui_draw.cpp" />
+    <ClCompile Include="vendors\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="vendors\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="vendors\imgui\imgui_tables.cpp" />
+    <ClCompile Include="vendors\imgui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\camera\Camera.h" />
     <ClInclude Include="inc\core\App.h" />
     <ClInclude Include="inc\core\Window.h" />
+    <ClInclude Include="inc\graphics\Material.h" />
+    <ClInclude Include="inc\graphics\Shader.h" />
     <ClInclude Include="inc\Helper.h" />
     <ClInclude Include="inc\miniBoxLog.h" />
+    <ClInclude Include="inc\world\Terrain.h" />
+    <ClInclude Include="inc\world\TerrainChunk.h" />
+    <ClInclude Include="inc\world\TerrainManager.h" />
+    <ClInclude Include="vendors\imgui\imgui.h" />
+    <ClInclude Include="vendors\imgui\ImGuiAF.h" />
+    <ClInclude Include="vendors\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="vendors\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="vendors\imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="vendors\imgui\imgui_internal.h" />
+    <ClInclude Include="vendors\imgui\imstb_rectpack.h" />
+    <ClInclude Include="vendors\imgui\imstb_textedit.h" />
+    <ClInclude Include="vendors\imgui\imstb_truetype.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\terrain.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

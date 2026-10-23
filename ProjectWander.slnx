@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="ProjectWander.vcxproj" />
+  <Project Path="ProjectWander.vcxproj" Id="3bc58ab8-f875-40e8-887c-5c7f7255590f" />
 </Solution>
