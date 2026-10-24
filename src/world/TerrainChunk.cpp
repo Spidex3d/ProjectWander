@@ -40,6 +40,36 @@ bool TerrainChunk::GetHeightAt(
     );
 }
 
+bool TerrainChunk::SaveHeightmap(const std::string& filename) const
+{
+    return m_terrain.SaveHeightmap(
+        filename,
+        m_chunkPosition.x,
+        m_chunkPosition.y
+    );
+}
+
+bool TerrainChunk::LoadHeightmap(
+    const std::string& filename
+)
+{
+    return m_terrain.LoadHeightmap(
+        filename,
+        m_chunkPosition.x,
+        m_chunkPosition.y
+    );
+}
+
+bool TerrainChunk::SaveHeightmapPNG(const std::string& filename) const
+{
+    return m_terrain.SaveHeightmapPNG(filename);
+}
+
+bool TerrainChunk::LoadHeightmapPNG(const std::string& filename)
+{
+    return m_terrain.LoadHeightmapPNG(filename);
+}
+
 void TerrainChunk::Render(
     const Shader& shader,
     const glm::mat4& view,

@@ -3,6 +3,7 @@
 #include "World/Terrain.h"
 
 #include <glm/glm.hpp>
+#include <string>
 
 class Shader;
 
@@ -16,6 +17,12 @@ public:
     bool Generate(int size, float spacing, const TerrainSettings& settings);
 
     bool GetHeightAt(float worldX, float worldZ, float& height) const;
+
+    bool SaveHeightmap(const std::string& filename) const;
+    bool LoadHeightmap(const std::string& filename);
+
+    bool SaveHeightmapPNG(const std::string& filename) const;
+    bool LoadHeightmapPNG(const std::string& filename);
 
     void Render(
         const Shader& shader,

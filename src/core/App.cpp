@@ -6,6 +6,7 @@
 
 #include <random>
 #include <limits>
+#include <cmath>
 
 #include <world/Terrain.h>
 
@@ -289,7 +290,194 @@ int App::Run()
 
 		ImGui::Begin("ProjectWander Settings");
 
+		// Camera heading
+		float heading = glm::degrees(
+			std::atan2(
+				m_camera.Front.x,
+				-m_camera.Front.z
+			)
+		);
+
+		// Convert to 0 - 360 degrees
+		if (heading < 0.0f)
+		{
+			heading += 360.0f;
+		}
+
+		ImGui::SeparatorText("Navigation");
+
+		ImGui::Text(
+			"Heading: %.1f degrees",
+			heading
+		);
+
+		ImGui::Text(
+			"Position X: %.1f",
+			m_camera.Position.x
+		);
+
+		ImGui::Text(
+			"Position Z: %.1f",
+			m_camera.Position.z
+		);
+
+		ImGui::SeparatorText("Wander Heightmap");
+		// Save and load the heightmap of chunk 0,0 to a .wheight file
+		const std::string heightmapPath =
+			"assets/worlds/TestWorld/heightmaps/chunk_0_0.wheight";
+
+		if (ImGui::Button("Save .wheight"))
+		{
+			if (m_terrainManager.SaveChunk(
+				0, 0, heightmapPath))
+			{
+				BOX_LOG_INFO("Wander heightmap saved");
+			}
+			else
+			{
+				BOX_LOG_ERROR("Wander heightmap save failed");
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Load .wheight"))
+		{
+			if (m_terrainManager.LoadChunk(
+				0, 0, heightmapPath))
+			{
+				BOX_LOG_INFO("Wander heightmap loaded");
+			}
+			else
+			{
+				BOX_LOG_ERROR("Wander heightmap load failed");
+			}
+		}
+
+
+		// Save the heightmap of chunk 0,0 to a PNG file
+		ImGui::SeparatorText("Heightmap Export");
+
+		if (ImGui::Button("Save Chunk 0,0"))
+		{
+			bool saved = m_terrainManager.SaveChunkHeightmap(
+				0,
+				0,
+				"assets/worlds/testworld/heightmaps/chunk_0_0.png"
+			);
+
+			if (saved)
+			{
+				BOX_LOG_INFO("Chunk heightmap saved successfully");
+			}
+			else
+			{
+				BOX_LOG_ERROR("Failed to save chunk heightmap");
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Load Chunk 0,0"))
+		{
+			bool loaded = m_terrainManager.LoadChunkHeightmap(
+				0,
+				0,
+				"assets/worlds/TestWorld/heightmaps/chunk_0_0.png"
+			);
+
+			if (loaded)
+			{
+				BOX_LOG_INFO("Chunk heightmap loaded successfully");
+			}
+			else
+			{
+				BOX_LOG_ERROR("Failed to load chunk heightmap");
+			}
+		}
+
+
 		ImGui::Text("Terrain Settings");
+
+		ImGui::SeparatorText("World Streaming");
+
+		ImGui::Text(
+			"Loaded Chunks: %zu",
+			m_terrainManager.GetChunkCount()
+		);
+
+		ImGui::Text("World Width: 5 chunks");
+
+		ImGui::Text(
+			"Camera X: %.1f",
+			m_camera.Position.x
+		);
+
+		ImGui::Text(
+			"Camera Z: %.1f",
+			m_camera.Position.z
+		);
+		// Maintain a fixed world width of 5 chunks Mountain Boundaries
+		ImGui::SeparatorText("Mountain Boundaries");
+
+		ImGui::SliderFloat(
+			"Boundary Height",
+			&m_pendingTerrainSettings.BoundaryMountainHeight,
+			0.0f,
+			400.0f
+		);
+
+		ImGui::SliderFloat(
+			"Boundary Start",
+			&m_pendingTerrainSettings.BoundaryStart,
+			100.0f,
+			500.0f
+		);
+
+		ImGui::SliderFloat(
+			"Boundary End",
+			&m_pendingTerrainSettings.BoundaryEnd,
+			500.0f,
+			750.0f
+		);
+
+		// Ensure valid range
+		if (m_pendingTerrainSettings.BoundaryEnd <=
+			m_pendingTerrainSettings.BoundaryStart)
+		{
+			m_pendingTerrainSettings.BoundaryEnd =
+				m_pendingTerrainSettings.BoundaryStart + 1.0f;
+		}
+		// Valley settings
+		ImGui::SeparatorText("Valley Settings");
+
+		ImGui::SliderFloat(
+			"Valley Flatness",
+			&m_pendingTerrainSettings.ValleyFlatness,
+			0.0f,
+			1.0f
+		);
+
+		ImGui::SliderFloat(
+			"Valley Width",
+			&m_pendingTerrainSettings.ValleyWidth,
+			50.0f,
+			300.0f
+		);
+
+		ImGui::SliderFloat(
+			"Valley Blend End",
+			&m_pendingTerrainSettings.ValleyBlendEnd,
+			300.0f,
+			450.0f
+		);
+
+		// Keep blending range valid
+		if (m_pendingTerrainSettings.ValleyBlendEnd <=
+			m_pendingTerrainSettings.ValleyWidth)
+		{
+			m_pendingTerrainSettings.ValleyBlendEnd =
+				m_pendingTerrainSettings.ValleyWidth + 1.0f;
+		}
+
+
+
 
 		ImGui::Separator();
 

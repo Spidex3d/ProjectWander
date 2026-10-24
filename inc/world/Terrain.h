@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <vector>
+#include <string>
 #include "World/TerrainSettings.h"
 
 
@@ -27,7 +28,13 @@ public:
 
 
     bool GetHeightAt(float worldX, float worldZ, float& height) const;
+	// 16bit greyscale heightmap
+    bool SaveHeightmap(const std::string& filename, int chunkX, int chunkZ) const;
+    bool LoadHeightmap(const std::string& filename, int expectedChunkX, int expectedChunkZ);
 
+	// 8bit greyscale PNG heightmap
+    bool SaveHeightmapPNG(const std::string& filename) const;
+    bool LoadHeightmapPNG(const std::string& filename);
 
     void Render(
         const Shader& shader,

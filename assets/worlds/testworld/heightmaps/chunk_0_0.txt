@@ -1,0 +1,4 @@
+version=1
+minHeight=-1.15002
+maxHeight=6.36375
+resolution=129

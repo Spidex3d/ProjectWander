@@ -2,22 +2,43 @@
 #include <iostream>
 #include <cmath>
 
+
 bool TerrainManager::Initialize()
 {
     Destroy();
 
-    // Create the initial chunks around world origin
+    // Generate initial terrain around origin
     Update(glm::vec3(0.0f));
 
-    return m_chunks.size() == 9;
+    const int expectedChunks =
+        (m_worldHalfWidth * 2 + 1) *
+        (m_streamDistance * 2 + 1);
+
+    return m_chunks.size() ==
+        static_cast<size_t>(expectedChunks);
 }
 
-void TerrainManager::Update(const glm::vec3& cameraPosition)
+//bool TerrainManager::Initialize()
+//{
+//    Destroy();
+//
+//    // Create the initial chunks around world origin
+//    Update(glm::vec3(0.0f));
+//
+//    return m_chunks.size() == 9;
+//}
+
+void TerrainManager::Update(
+    const glm::vec3& cameraPosition
+)
 {
     const float chunkSize =
         m_chunkResolution * m_chunkSpacing;
 
-    // Calculate which chunk contains the camera
+    // =====================================
+    // Find camera chunk
+    // =====================================
+
     int cameraChunkX = static_cast<int>(
         std::floor(cameraPosition.x / chunkSize)
         );
@@ -29,46 +50,64 @@ void TerrainManager::Update(const glm::vec3& cameraPosition)
     m_currentChunkX = cameraChunkX;
     m_currentChunkZ = cameraChunkZ;
 
-    // Generate missing chunks around the camera
-    for (int z = -m_viewDistance; z <= m_viewDistance; ++z)
+    // =====================================
+    // Generate required chunks
+    // =====================================
+
+    // Fixed X width
+    for (int x = -m_worldHalfWidth;
+        x <= m_worldHalfWidth;
+        ++x)
     {
-        for (int x = -m_viewDistance; x <= m_viewDistance; ++x)
+        // Dynamic Z range
+        for (int z = cameraChunkZ - m_streamDistance;
+            z <= cameraChunkZ + m_streamDistance;
+            ++z)
         {
-            int chunkX = cameraChunkX + x;
-            int chunkZ = cameraChunkZ + z;
+            ChunkKey key(x, z);
 
-            ChunkKey key(chunkX, chunkZ);
+            // Skip existing chunks
+            if (m_chunks.find(key) != m_chunks.end())
+                continue;
 
-            // Only generate chunks that don't exist
-            if (m_chunks.find(key) == m_chunks.end())
+            // Create a new chunk
+            auto chunk =
+                std::make_unique<TerrainChunk>(x, z);
+
+            if (chunk->Generate(
+                m_chunkResolution,
+                m_chunkSpacing,
+                m_settings))
             {
-                auto chunk =
-                    std::make_unique<TerrainChunk>(
-                        chunkX,
-                        chunkZ
-                    );
-
-                if (chunk->Generate(
-                    m_chunkResolution,
-                    m_chunkSpacing,
-                    m_settings))
-                {
-                    m_chunks.emplace(
-                        key,
-                        std::move(chunk)
-                    );
-                }
+                m_chunks.emplace(
+                    key,
+                    std::move(chunk)
+                );
             }
         }
     }
 
-    // Remove chunks outside our view distance
-    for (auto it = m_chunks.begin(); it != m_chunks.end();)
-    {
-        int dx = std::abs(it->first.first - cameraChunkX);
-        int dz = std::abs(it->first.second - cameraChunkZ);
+    // =====================================
+    // Remove distant chunks
+    // =====================================
 
-        if (dx > m_viewDistance || dz > m_viewDistance)
+    for (auto it = m_chunks.begin();
+        it != m_chunks.end();)
+    {
+        int chunkX = it->first.first;
+        int chunkZ = it->first.second;
+
+        // Outside world width?
+        bool outsideWidth =
+            chunkX < -m_worldHalfWidth ||
+            chunkX > m_worldHalfWidth;
+
+        // Too far ahead or behind?
+        bool outsideDistance =
+            std::abs(chunkZ - cameraChunkZ) >
+            m_streamDistance;
+
+        if (outsideWidth || outsideDistance)
         {
             it = m_chunks.erase(it);
         }
@@ -78,6 +117,73 @@ void TerrainManager::Update(const glm::vec3& cameraPosition)
         }
     }
 }
+
+//void TerrainManager::Update(const glm::vec3& cameraPosition)
+//{
+//    const float chunkSize =
+//        m_chunkResolution * m_chunkSpacing;
+//
+//    // Calculate which chunk contains the camera
+//    int cameraChunkX = static_cast<int>(
+//        std::floor(cameraPosition.x / chunkSize)
+//        );
+//
+//    int cameraChunkZ = static_cast<int>(
+//        std::floor(cameraPosition.z / chunkSize)
+//        );
+//
+//    m_currentChunkX = cameraChunkX;
+//    m_currentChunkZ = cameraChunkZ;
+//
+//    // Generate missing chunks around the camera
+//    for (int z = -m_viewDistance; z <= m_viewDistance; ++z)
+//    {
+//        for (int x = -m_viewDistance; x <= m_viewDistance; ++x)
+//        {
+//            int chunkX = cameraChunkX + x;
+//            int chunkZ = cameraChunkZ + z;
+//
+//            ChunkKey key(chunkX, chunkZ);
+//
+//            // Only generate chunks that don't exist
+//            if (m_chunks.find(key) == m_chunks.end())
+//            {
+//                auto chunk =
+//                    std::make_unique<TerrainChunk>(
+//                        chunkX,
+//                        chunkZ
+//                    );
+//
+//                if (chunk->Generate(
+//                    m_chunkResolution,
+//                    m_chunkSpacing,
+//                    m_settings))
+//                {
+//                    m_chunks.emplace(
+//                        key,
+//                        std::move(chunk)
+//                    );
+//                }
+//            }
+//        }
+//    }
+//
+//    // Remove chunks outside our view distance
+//    for (auto it = m_chunks.begin(); it != m_chunks.end();)
+//    {
+//        int dx = std::abs(it->first.first - cameraChunkX);
+//        int dz = std::abs(it->first.second - cameraChunkZ);
+//
+//        if (dx > m_viewDistance || dz > m_viewDistance)
+//        {
+//            it = m_chunks.erase(it);
+//        }
+//        else
+//        {
+//            ++it;
+//        }
+//    }
+//}
 
 
 void TerrainManager::Regenerate(
@@ -127,7 +233,69 @@ bool TerrainManager::GetHeightAt(
     );
 }
 
+bool TerrainManager::SaveChunk(int chunkX, int chunkZ, const std::string& filename) const
+{
+    ChunkKey key(chunkX, chunkZ);
 
+    auto it = m_chunks.find(key);
+
+    if (it == m_chunks.end())
+        return false;
+
+    return it->second->SaveHeightmap(filename);
+}
+
+bool TerrainManager::LoadChunk(int chunkX, int chunkZ, const std::string& filename)
+{
+    ChunkKey key(chunkX, chunkZ);
+
+    auto it = m_chunks.find(key);
+
+    if (it == m_chunks.end())
+        return false;
+
+    return it->second->LoadHeightmap(filename);
+}
+
+bool TerrainManager::SaveChunkHeightmap(int chunkX, int chunkZ, const std::string& filename) const
+{
+    ChunkKey key(chunkX, chunkZ);
+
+    auto it = m_chunks.find(key);
+
+    if (it == m_chunks.end())
+    {
+        std::cout << "Chunk not loaded: "
+            << chunkX << ", "
+            << chunkZ << std::endl;
+
+        return false;
+    }
+
+    return it->second->SaveHeightmapPNG(filename);
+}
+
+bool TerrainManager::LoadChunkHeightmap(
+    int chunkX,
+    int chunkZ,
+    const std::string& filename
+)
+{
+    ChunkKey key(chunkX, chunkZ);
+
+    auto it = m_chunks.find(key);
+
+    if (it == m_chunks.end())
+    {
+        std::cout << "Chunk not loaded: "
+            << chunkX << ", "
+            << chunkZ << '\n';
+
+        return false;
+    }
+
+    return it->second->LoadHeightmapPNG(filename);
+}
 void TerrainManager::Render(
     const Shader& shader,
     const glm::mat4& view,

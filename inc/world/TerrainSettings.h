@@ -27,4 +27,26 @@ struct TerrainSettings
     float MountainFrequency = 0.001f;
     float MountainStart = 0.35f;
     float MountainEnd = 0.75f;
+
+    // ====================================
+    // World boundaries
+    // ====================================
+
+    float BoundaryMountainHeight = 180.0f;
+    float BoundaryStart = 384.0f;
+    float BoundaryEnd = 640.0f;
+
+    // ====================================
+    // Valley settings
+    // ====================================
+
+    // 0 = Original terrain
+    // 1 = Maximum flattening
+    float ValleyFlatness = 0.85f;
+
+    // Half-width of the flatter valley floor
+    float ValleyWidth = 150.0f;
+
+    // Distance where the original hills return
+    float ValleyBlendEnd = 370.0f;
 };

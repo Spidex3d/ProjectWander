@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <utility>
+#include <string>
 
 class Shader;
 
@@ -19,6 +20,11 @@ public:
 
     bool GetHeightAt(float worldX, float worldZ, float& height) const;
 
+    bool SaveChunk(int chunkX, int chunkZ, const std::string& filename) const;
+    bool LoadChunk(int chunkX, int chunkZ, const std::string& filename);
+
+    bool SaveChunkHeightmap(int chunkX, int chunkZ, const std::string& filename) const;
+    bool LoadChunkHeightmap(int chunkX, int chunkZ, const std::string& filename);
 
     void Render(
         const Shader& shader,
@@ -53,40 +59,18 @@ private:
     int m_chunkResolution = 128;
     float m_chunkSpacing = 2.0f;
 
-    // Number of chunks around the camera
-    int m_viewDistance = 1;
+    // =====================================
+    // World dimensions
+    // =====================================
+
+   // Fixed world width:
+   // -2, -1, 0, +1, +2
+    int m_worldHalfWidth = 2;
+
+    // Number of chunk rows ahead and behind camera
+    int m_streamDistance = 2;
 
     int m_currentChunkX = 0;
     int m_currentChunkZ = 0;
 };
 
-//
-//#include <memory>
-//#include <vector>
-//
-//class Shader;
-//
-//class TerrainManager
-//{
-//public:
-//
-//    bool Initialize();
-//
-//    void Render(
-//        const Shader& shader,
-//        const glm::mat4& view,
-//        const glm::mat4& projection
-//    ) const;
-//
-//    void Destroy();
-//
-//private:
-//
-//    std::vector<std::unique_ptr<TerrainChunk>> m_chunks;
-//
-//    int m_chunkResolution = 128;
-//    float m_chunkSpacing = 2.0f;
-//
-//   // int m_chunkResolution = 64;
-//    //float m_chunkSpacing = 2.0f;
-//};
