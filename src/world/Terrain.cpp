@@ -6,31 +6,169 @@
 
 namespace
 {
+    float GetSeedOffset(int seed, unsigned int salt)
+    {
+        // Deterministic integer mixing
+        unsigned int value =
+            static_cast<unsigned int>(seed) ^ salt;
+
+        value ^= value >> 16;
+        value *= 0x7feb352dU;
+        value ^= value >> 15;
+        value *= 0x846ca68bU;
+        value ^= value >> 16;
+
+        // Return a stable offset between
+        // approximately -10000 and +10000.
+        return
+            static_cast<float>(value % 20001U)
+            - 10000.0f;
+    }
+
+
     float GetTerrainHeight(
         float x,
         float z,
-        float heightScale,
-        float noiseFrequency,
-        int octaves)
+        const TerrainSettings& settings
+    )
     {
-        float height = 0.0f;
-        float amplitude = 1.0f;
-        float frequency = noiseFrequency;
+        // ====================================
+        // World seed offsets
+       // ====================================
 
-        for (int i = 0; i < octaves; ++i)
+     // Hills
+        float hillOffsetX = GetSeedOffset(
+            settings.WorldSeed,
+            0x1234U
+        );
+
+        float hillOffsetZ = GetSeedOffset(
+            settings.WorldSeed,
+            0x5678U
+        );
+
+        // Mountains
+        float mountainOffsetX = GetSeedOffset(
+            settings.WorldSeed,
+            0x9ABCU
+        );
+
+        float mountainOffsetZ = GetSeedOffset(
+            settings.WorldSeed,
+            0xDEF0U
+        );
+
+        // Mountain distribution
+        float maskOffsetX = GetSeedOffset(
+            settings.WorldSeed,
+            0x1357U
+        );
+
+        float maskOffsetZ = GetSeedOffset(
+            settings.WorldSeed,
+            0x2468U
+        );
+
+
+        // ====================================
+        // Rolling hills
+        // ====================================
+
+        float hills = 0.0f;
+
+        float amplitude = 1.0f;
+        float frequency = settings.NoiseFrequency;
+
+        for (int i = 0; i < settings.NoiseOctaves; ++i)
         {
             float noise = glm::perlin(
-                glm::vec2(x * frequency, z * frequency)
+                glm::vec2(
+                    x * frequency + hillOffsetX,
+                    z * frequency + hillOffsetZ
+                )
             );
 
-            height += noise * amplitude;
+
+            hills += noise * amplitude;
 
             amplitude *= 0.5f;
             frequency *= 2.0f;
         }
 
-        return height * heightScale;
+        hills *= settings.HillHeight;
+
+
+        // ====================================
+        // Mountain ridges
+        // ====================================
+
+        float mountains = 0.0f;
+
+        amplitude = 1.0f;
+        frequency = settings.NoiseFrequency * 0.5f;
+
+        for (int i = 0; i < settings.NoiseOctaves; ++i)
+        {
+            float noise = glm::perlin(
+                glm::vec2(
+                    x * frequency + mountainOffsetX,
+                    z * frequency + mountainOffsetZ
+                )
+            );
+
+
+            float ridge = 1.0f - std::abs(noise);
+
+            // Control ridge sharpness
+            ridge = std::pow(
+                glm::clamp(ridge, 0.0f, 1.0f),
+                settings.RidgeSharpness
+            );
+
+            mountains += ridge * amplitude;
+
+            amplitude *= 0.5f;
+            frequency *= 2.0f;
+        }
+
+
+        // ====================================
+        // Mountain distribution
+        // ====================================
+
+        float mountainMask = glm::perlin(
+            glm::vec2(
+                x * settings.MountainFrequency + maskOffsetX,
+                z * settings.MountainFrequency + maskOffsetZ
+            )
+        );
+
+
+        mountainMask =
+            mountainMask * 0.5f + 0.5f;
+
+        mountainMask = glm::smoothstep(
+            settings.MountainStart,
+            settings.MountainEnd,
+            mountainMask
+        );
+
+
+        // ====================================
+        // Final terrain height
+        // ====================================
+
+        float mountainHeight =
+            mountains *
+            settings.HillHeight *
+            settings.MountainHeight;
+
+        return hills + mountainHeight * mountainMask;
     }
+
+
+
+    
 }
 
 
@@ -40,7 +178,7 @@ Terrain::~Terrain()
     Destroy();
 }
 
-bool Terrain::Generate(int size, float spacing, const glm::vec2& chunkOrigin)
+bool Terrain::Generate(int size, float spacing, const glm::vec2& chunkOrigin, const TerrainSettings& settings)
 {
     // Remove any previously generated terrain
     Destroy();
@@ -68,31 +206,38 @@ bool Terrain::Generate(int size, float spacing, const glm::vec2& chunkOrigin)
             float height = GetTerrainHeight(
                 xPos,
                 zPos,
-                HeightScale,
-                NoiseFrequency,
-                NoiseOctaves
+                settings
             );
+            
+            
 
             // Sample neighbouring heights
+            
             float hL = GetTerrainHeight(
-                xPos - spacing, zPos,
-                HeightScale, NoiseFrequency, NoiseOctaves
+                xPos - spacing,
+                zPos,
+                settings
             );
 
             float hR = GetTerrainHeight(
-                xPos + spacing, zPos,
-                HeightScale, NoiseFrequency, NoiseOctaves
+                xPos + spacing,
+                zPos,
+                settings
             );
 
             float hD = GetTerrainHeight(
-                xPos, zPos - spacing,
-                HeightScale, NoiseFrequency, NoiseOctaves
+                xPos,
+                zPos - spacing,
+                settings
             );
 
             float hU = GetTerrainHeight(
-                xPos, zPos + spacing,
-                HeightScale, NoiseFrequency, NoiseOctaves
+                xPos,
+                zPos + spacing,
+                settings
             );
+            
+            
 
             // Calculate normal
             glm::vec3 normal = glm::normalize(

@@ -73,18 +73,56 @@ bool Material::Load(const std::string& matFile)
     fs::path albedoPath =
         materialDirectory / it->second;
 
-    m_albedo = LoadTexture(albedoPath.string());
+    //m_albedo = LoadTexture(albedoPath.string());
+    m_albedo = LoadTexture(albedoPath.string(), true);
 
     if (m_albedo == 0)
         return false;
 
-    std::cout << "Material loaded: "
-        << m_name << std::endl;
+    std::cout << "Material loaded: " << m_name << std::endl;
+
+    // =======================================
+    // Load normal map
+    // =======================================
+
+    auto normalIt = properties.find("normal");
+
+    if (normalIt != properties.end() &&
+        !normalIt->second.empty())
+    {
+        fs::path normalPath =
+            materialDirectory / normalIt->second;
+
+        m_normal = LoadTexture(
+            normalPath.string(),
+            false
+        );
+
+        if (m_normal == 0)
+        {
+            std::cout << "Failed to load normal map: "
+                << normalPath.string()
+                << std::endl;
+
+            Destroy();
+            return false;
+        }
+    }
 
     return true;
 }
 
-GLuint Material::LoadTexture(const std::string& path)
+void Material::BindNormal(GLuint textureUnit) const
+{
+    glActiveTexture(GL_TEXTURE0 + textureUnit);
+
+    glBindTexture(
+        GL_TEXTURE_2D,
+        m_normal
+    );
+}
+
+GLuint Material::LoadTexture(const std::string& path, bool isColorTexture)
 {
     int width = 0;
     int height = 0;
@@ -118,8 +156,7 @@ GLuint Material::LoadTexture(const std::string& path)
         return 0;
     }
 
-    GLenum format =
-        channels == 4 ? GL_RGBA : GL_RGB;
+    GLenum format = channels == 4 ? GL_RGBA : GL_RGB;
 
     GLuint texture = 0;
 
@@ -154,8 +191,39 @@ GLuint Material::LoadTexture(const std::string& path)
 
     // Correct row alignment for RGB images
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    // ############################################
+    // Determine image format
+    //GLenum format = channels == 4 ? GL_RGBA : GL_RGB;
+
+    // Albedo uses sRGB.
+    // Normal maps use linear RGB.
+    GLenum internalFormat;
+
+    if (isColorTexture)
+    {
+        internalFormat =
+            channels == 4 ? GL_SRGB8_ALPHA8 : GL_SRGB8;
+    }
+    else
+    {
+        internalFormat =
+            channels == 4 ? GL_RGBA8 : GL_RGB8;
+    }
 
     glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        internalFormat,
+        width,
+        height,
+        0,
+        format,
+        GL_UNSIGNED_BYTE,
+        data
+    );
+
+
+    /*glTexImage2D(
         GL_TEXTURE_2D,
         0,
         channels == 4 ? GL_SRGB8_ALPHA8 : GL_SRGB8,
@@ -165,7 +233,7 @@ GLuint Material::LoadTexture(const std::string& path)
         format,
         GL_UNSIGNED_BYTE,
         data
-    );
+    );*/
 
     glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -196,10 +264,18 @@ void Material::Unbind(GLuint textureUnit) const
 
 void Material::Destroy()
 {
+    // Delete albedo texture
     if (m_albedo != 0)
     {
         glDeleteTextures(1, &m_albedo);
         m_albedo = 0;
+    }
+
+    // Delete normal texture
+    if (m_normal != 0)
+    {
+        glDeleteTextures(1, &m_normal);
+        m_normal = 0;
     }
 
     m_name.clear();

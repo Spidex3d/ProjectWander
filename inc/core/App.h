@@ -6,6 +6,7 @@
 #include <graphics/Shader.h>
 #include "world/TerrainManager.h"
 #include "graphics/Material.h"
+#include "World/TerrainSettings.h"
 
 class Window;
 struct GLFWwindow;
@@ -49,7 +50,8 @@ private:
 	void ProcessInput(GLFWwindow* window);
 	void ProcessMouse(GLFWwindow* window);
 
-
+	// Settings being edited in ImGui
+	TerrainSettings m_pendingTerrainSettings;
 	
 	TerrainManager m_terrainManager;
 
@@ -66,6 +68,10 @@ private:
 	// Triplanar texture settings
 	float m_textureScale = 0.1f;
 	float m_triplanarSharpness = 4.0f;
+
+	// Normal map settings
+	float m_grassNormalStrength = 1.0f;
+	float m_rockNormalStrength = 1.0f;
 
 	// Camera movement modes
 	bool m_walkMode = true;

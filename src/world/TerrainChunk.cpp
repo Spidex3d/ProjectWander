@@ -5,7 +5,11 @@ TerrainChunk::TerrainChunk(int chunkX, int chunkZ)
     : m_chunkPosition(chunkX, chunkZ)
 {}
 
-bool TerrainChunk::Generate(int size, float spacing)
+bool TerrainChunk::Generate(
+    int size,
+    float spacing,
+    const TerrainSettings& settings
+)
 {
     float chunkSize = size * spacing;
 
@@ -17,9 +21,11 @@ bool TerrainChunk::Generate(int size, float spacing)
     return m_terrain.Generate(
         size,
         spacing,
-        worldOrigin
+        worldOrigin,
+        settings
     );
 }
+
 
 bool TerrainChunk::GetHeightAt(
     float worldX,

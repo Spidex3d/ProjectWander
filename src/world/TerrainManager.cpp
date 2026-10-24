@@ -50,7 +50,8 @@ void TerrainManager::Update(const glm::vec3& cameraPosition)
 
                 if (chunk->Generate(
                     m_chunkResolution,
-                    m_chunkSpacing))
+                    m_chunkSpacing,
+                    m_settings))
                 {
                     m_chunks.emplace(
                         key,
@@ -77,6 +78,22 @@ void TerrainManager::Update(const glm::vec3& cameraPosition)
         }
     }
 }
+
+
+void TerrainManager::Regenerate(
+    const TerrainSettings& settings,
+    const glm::vec3& cameraPosition)
+{
+    // Store the new generation settings
+    m_settings = settings;
+
+    // Delete old terrain chunks
+    Destroy();
+
+    // Generate chunks around the current camera
+    Update(cameraPosition);
+}
+
 
 bool TerrainManager::GetHeightAt(
     float worldX,

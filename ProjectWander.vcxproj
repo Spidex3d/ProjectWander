@@ -173,6 +173,7 @@
     <ClInclude Include="inc\world\Terrain.h" />
     <ClInclude Include="inc\world\TerrainChunk.h" />
     <ClInclude Include="inc\world\TerrainManager.h" />
+    <ClInclude Include="inc\world\TerrainSettings.h" />
     <ClInclude Include="vendors\imgui\imgui.h" />
     <ClInclude Include="vendors\imgui\ImGuiAF.h" />
     <ClInclude Include="vendors\imgui\imgui_impl_glfw.h" />

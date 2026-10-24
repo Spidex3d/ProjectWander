@@ -4,6 +4,9 @@
 #include <core/Window.h>
 #include <imgui/imgui.h>
 
+#include <random>
+#include <limits>
+
 #include <world/Terrain.h>
 
 
@@ -80,6 +83,8 @@ bool App::Init()
 		BOX_LOG_DEBUG("Failed to initialize terrain chunks");
 		return false;
 	}
+
+	m_pendingTerrainSettings = m_terrainManager.GetSettings();
 
 	m_isRunning = true;
 
@@ -168,11 +173,32 @@ int App::Run()
 		);
 		
 		// Render the terrain
-		// Set texture unit
-		//m_terrainShader->SetUniformInt("uAlbedo", 0);
+		
 
 		// Activate terrain shader
 		m_terrainShader->Use();
+
+		// Normal map texture units
+		m_terrainShader->SetUniformInt(
+			"uGrassNormal", 2
+		);
+
+		m_terrainShader->SetUniformInt(
+			"uRockNormal", 3
+		);
+
+		// Normal map strength
+		m_terrainShader->SetUniformFloat(
+			"uGrassNormalStrength",
+			m_grassNormalStrength
+		);
+
+		m_terrainShader->SetUniformFloat(
+			"uRockNormalStrength",
+			m_rockNormalStrength
+		);
+
+
 
 		// Triplanar texture settings
 		m_terrainShader->SetUniformFloat(
@@ -216,8 +242,22 @@ int App::Run()
 		);
 
 		// Bind both terrain materials
+		// Colour textures
 		m_grassMaterial.Bind(0);
 		m_rockMaterial.Bind(1);
+
+		// Normal maps
+		m_grassMaterial.BindNormal(2);
+		m_rockMaterial.BindNormal(3);
+
+		// Render all terrain chunks
+		m_terrainManager.Render(
+			*m_terrainShader,
+			view,
+			projection
+		);
+
+
 
 		// Render terrain chunks
 		m_terrainManager.Render(
@@ -230,6 +270,14 @@ int App::Run()
 		m_grassMaterial.Unbind(0);
 		m_rockMaterial.Unbind(1);
 
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		// Return to the default texture unit
+		glActiveTexture(GL_TEXTURE0);
 
 		
 
@@ -246,6 +294,138 @@ int App::Run()
 		ImGui::Separator();
 
 		ImGui::Checkbox("Wireframe", &m_wireframe);
+
+		ImGui::SeparatorText("World Generation");
+
+		ImGui::InputInt(
+			"World Seed",
+			&m_pendingTerrainSettings.WorldSeed
+		);
+
+		// Keep the seed non-negative
+		if (m_pendingTerrainSettings.WorldSeed < 0)
+		{
+			m_pendingTerrainSettings.WorldSeed = 0;
+		}
+		if (ImGui::Button("Random Seed"))
+		{
+			static std::mt19937 generator(
+				std::random_device{}()
+			);
+
+			static std::uniform_int_distribution<int> distribution(
+				0,
+				std::numeric_limits<int>::max()
+			);
+
+			m_pendingTerrainSettings.WorldSeed =
+				distribution(generator);
+		}
+
+		ImGui::SeparatorText("Terrain Generator");
+
+		// ====================================
+		// Rolling hills
+		// ====================================
+
+		ImGui::Text("Rolling Hills");
+
+		ImGui::SliderFloat(
+			"Hill Height",
+			&m_pendingTerrainSettings.HillHeight,
+			0.0f,
+			100.0f
+		);
+
+		ImGui::SliderFloat(
+			"Noise Frequency",
+			&m_pendingTerrainSettings.NoiseFrequency,
+			0.001f,
+			0.05f,
+			"%.4f"
+		);
+
+		ImGui::SliderInt(
+			"Noise Octaves",
+			&m_pendingTerrainSettings.NoiseOctaves,
+			1,
+			8
+		);
+
+
+		// ====================================
+		// Mountains
+		// ====================================
+
+		ImGui::SeparatorText("Mountains");
+
+		ImGui::SliderFloat(
+			"Mountain Height",
+			&m_pendingTerrainSettings.MountainHeight,
+			0.0f,
+			10.0f
+		);
+
+		ImGui::SliderFloat(
+			"Ridge Sharpness",
+			&m_pendingTerrainSettings.RidgeSharpness,
+			1.0f,
+			8.0f
+		);
+
+		ImGui::SliderFloat(
+			"Mountain Frequency",
+			&m_pendingTerrainSettings.MountainFrequency,
+			0.0001f,
+			0.01f,
+			"%.4f"
+		);
+
+
+		// ====================================
+		// Mountain coverage
+		// ====================================
+
+		ImGui::SeparatorText("Mountain Coverage");
+
+		ImGui::SliderFloat(
+			"Mountain Start",
+			&m_pendingTerrainSettings.MountainStart,
+			0.0f,
+			1.0f
+		);
+
+		ImGui::SliderFloat(
+			"Mountain End",
+			&m_pendingTerrainSettings.MountainEnd,
+			0.0f,
+			1.0f
+		);
+
+		// Keep the blending range valid
+		if (m_pendingTerrainSettings.MountainEnd <=
+			m_pendingTerrainSettings.MountainStart)
+		{
+			m_pendingTerrainSettings.MountainEnd =
+				m_pendingTerrainSettings.MountainStart + 0.01f;
+		}
+
+
+		// ====================================
+		// Regenerate
+		// ====================================
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Regenerate Terrain"))
+		{
+			m_terrainManager.Regenerate(
+				m_pendingTerrainSettings,
+				m_camera.Position
+			);
+		}
+
+
 
 		ImGui::SeparatorText("Triplanar Mapping");
 
@@ -280,6 +460,22 @@ int App::Run()
 		{
 			m_rockEnd = m_rockStart + 0.01f;
 		}
+
+		ImGui::SeparatorText("Normal Mapping");
+
+		ImGui::SliderFloat(
+			"Grass Normal Strength",
+			&m_grassNormalStrength,
+			0.0f,
+			2.0f
+		);
+
+		ImGui::SliderFloat(
+			"Rock Normal Strength",
+			&m_rockNormalStrength,
+			0.0f,
+			2.0f
+		);
 
 		ImGui::Separator();
 		ImGui::SeparatorText("Terrain Streaming");
@@ -377,6 +573,9 @@ void App::Shutdown()
 		
 		m_grassMaterial.Destroy();
 		m_rockMaterial.Destroy();
+
+		// Release terrain material resources
+		
 		
 		// Release shader resources
 		m_terrainShader.reset();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "World/TerrainChunk.h"
+#include "World/TerrainSettings.h"
 #include <glm/glm.hpp>
 #include <map>
 #include <memory>
@@ -18,11 +19,21 @@ public:
 
     bool GetHeightAt(float worldX, float worldZ, float& height) const;
 
+
     void Render(
         const Shader& shader,
         const glm::mat4& view,
         const glm::mat4& projection
     ) const;
+
+    // Access current terrain settings
+    const TerrainSettings& GetSettings() const
+    {
+        return m_settings;
+    }
+
+    // Apply new settings and regenerate loaded terrain
+    void Regenerate(const TerrainSettings& settings, const glm::vec3& cameraPosition);
 
     void Destroy();
 
@@ -36,7 +47,9 @@ private:
     using ChunkKey = std::pair<int, int>;
 
     std::map<ChunkKey, std::unique_ptr<TerrainChunk>> m_chunks;
-
+    
+    TerrainSettings m_settings;
+    
     int m_chunkResolution = 128;
     float m_chunkSpacing = 2.0f;
 

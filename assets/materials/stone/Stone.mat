@@ -1,0 +1,7 @@
+name=Stone
+albedo=Stone_albedo.png
+normal=Stone_normal.png
+roughness=Stone_roughness.png
+ao=Stone_ao.png
+displacement=Stone_displacement.png
+version=1

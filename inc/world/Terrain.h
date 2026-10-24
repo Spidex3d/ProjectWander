@@ -1,8 +1,9 @@
 #pragma once
-
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <vector>
+#include "World/TerrainSettings.h"
+
 
 struct TerrainVertex
 {
@@ -22,12 +23,8 @@ public:
     Terrain() = default;
     ~Terrain();
 
-   // bool Generate(int size, float spacing);
-    bool Generate(int size, float spacing, const glm::vec2& chunkOrigin = glm::vec2(0.0f));
+    bool Generate(int size, float spacing, const glm::vec2& chunkOrigin = glm::vec2(0.0f), const TerrainSettings& settings = TerrainSettings());
 
-    float HeightScale = 15.0f;
-    float NoiseFrequency = 0.01f;
-    int NoiseOctaves = 5;
 
     bool GetHeightAt(float worldX, float worldZ, float& height) const;
 

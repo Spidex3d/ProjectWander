@@ -12,7 +12,8 @@ public:
 
     TerrainChunk(int chunkX, int chunkZ);
 
-    bool Generate(int size, float spacing);
+    //bool Generate(int size, float spacing);
+    bool Generate(int size, float spacing, const TerrainSettings& settings);
 
     bool GetHeightAt(float worldX, float worldZ, float& height) const;
 

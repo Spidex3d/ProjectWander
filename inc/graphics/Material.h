@@ -14,6 +14,7 @@ public:
     Material& operator=(const Material&) = delete;
 
     bool Load(const std::string& matFile);
+    void BindNormal(GLuint textureUnit) const;
 
     void Bind(GLuint textureUnit = 0) const;
     void Unbind(GLuint textureUnit = 0) const;
@@ -31,9 +32,10 @@ public:
     }
 
 private:
-    GLuint LoadTexture(const std::string& path);
+    GLuint LoadTexture(const std::string& path, bool isColorTexture);
 
     std::string m_name;
 
     GLuint m_albedo = 0;
+    GLuint m_normal = 0;
 };
